@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dream Room Test</title>
+<meta name="description" content="25 questions. There are no wrong rooms.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Newsreader:ital,opsz,wght@1,6..72,400;1,6..72,500&display=swap">
+<style>
+/* Layout: one question per screen, like flipping through paint swatches for a room.
+   Periwinkle wall, navy ink, a single Want-Want red for the lamp and the buttons. */
+:root {
+  --wall: #E7EAFA;
+  --paper: #FBFAF6;
+  --ink: #1B2145;
+  --ink-soft: #565C80;
+  --line: #C9CDEA;
+  --lamp: #E2231A;
+  --glow: #FFE38A;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --voice: "Newsreader", "Iowan Old Style", Georgia, serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--wall);
+  color: var(--ink);
+  font: 400 17px/1.5 var(--display);
+  -webkit-font-smoothing: antialiased;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.shell {
+  min-height: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  padding-block: 20px 28px;
+  padding-left: max(18px, env(safe-area-inset-left, 0px));
+  padding-right: max(18px, env(safe-area-inset-right, 0px));
+}
+[hidden] { display: none !important; }
+
+/* top bar */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.bar b { color: var(--ink); font-weight: 600; }
+.track { height: 6px; border-radius: 6px; background: var(--line); margin-top: 10px; overflow: hidden; }
+.track i { display: block; height: 100%; width: 0; background: var(--ink); border-radius: 6px;
+  transition: width .45s cubic-bezier(.2,.8,.2,1); }
+
+/* the card */
+.card {
+  margin-top: 22px;
+  background: var(--paper);
+  border-radius: 22px;
+  padding: 28px 24px 26px;
+  box-shadow: 0 1px 0 var(--line), 0 18px 40px -24px rgba(27,33,69,.35);
+  display: flex; flex-direction: column; gap: 18px;
+  animation: in .38s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes in { from { opacity: .3; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.part { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--ink-soft); }
+.part::before { content: ""; width: 14px; height: 14px; border-radius: 4px; background: var(--chip, var(--glow)); }
+.num { font-weight: 800; font-size: 56px; line-height: .9; letter-spacing: -.03em; color: var(--line);
+  font-variant-numeric: tabular-nums; }
+h2 { margin: 0; font-weight: 600; font-size: 25px; line-height: 1.22; letter-spacing: -.01em; text-wrap: balance; }
+.hint { margin: -8px 0 0; font-family: var(--voice); font-style: italic; color: var(--ink-soft); font-size: 17px; }
+
+input[type=text], textarea {
+  width: 100%; font: inherit; color: var(--ink); background: var(--wall);
+  border: 2px solid transparent; border-radius: 14px; padding: 14px 16px; outline: none;
+  transition: border-color .15s, background .15s;
+}
+textarea { min-height: 120px; resize: vertical; line-height: 1.45; }
+input[type=text]:focus, textarea:focus { border-color: var(--ink); background: #fff; }
+::placeholder { color: #8E93B5; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip {
+  font: inherit; font-size: 16px; color: var(--ink); background: var(--wall);
+  border: 2px solid transparent; border-radius: 999px; padding: 10px 16px; cursor: pointer;
+  transition: background .15s, border-color .15s, transform .1s;
+}
+.chip:hover { border-color: var(--line); }
+.chip:active { transform: scale(.97); }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.chip:focus-visible, .btn:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
+
+/* buttons */
+.nav { display: flex; gap: 12px; margin-top: auto; padding-top: 22px; }
+.btn {
+  font: inherit; font-weight: 600; font-size: 17px; border: 0; border-radius: 999px;
+  padding: 15px 22px; cursor: pointer; transition: transform .1s, opacity .15s;
+}
+.btn:active { transform: scale(.97); }
+.btn.go { background: var(--lamp); color: #fff; flex: 1; }
+.btn.back { background: transparent; color: var(--ink); border: 2px solid var(--line); }
+.btn[disabled] { opacity: .45; cursor: default; }
+
+/* intro + result */
+.intro { display: flex; flex-direction: column; gap: 20px; margin-top: 10px; }
+.room { width: 100%; max-width: 360px; height: auto; align-self: center; }
+.room .lampglow { animation: flick 4s ease-in-out infinite; transform-origin: 252px 70px; }
+@keyframes flick { 0%,100% { opacity: .9; } 50% { opacity: .55; } }
+h1 { margin: 0; font-weight: 800; font-size: clamp(40px, 11vw, 58px); line-height: .95; letter-spacing: -.035em; text-wrap: balance; }
+h1 em { font-family: var(--voice); font-weight: 400; font-style: italic; letter-spacing: -.01em; }
+.lede { margin: 0; font-family: var(--voice); font-style: italic; font-size: 20px; color: var(--ink-soft); max-width: 34ch; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px; letter-spacing: .08em; text-transform: uppercase; }
+.facts span { background: var(--paper); border-radius: 999px; padding: 6px 12px; }
+#name { background: var(--paper); }
+label.small { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); display: block; margin-bottom: 8px; }
+
+.result .tag { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-soft); }
+.result h1 { color: var(--lamp); }
+.result p { margin: 0; font-size: 18px; max-width: 40ch; }
+.spec { display: grid; gap: 0; border-top: 2px solid var(--ink); }
+.spec div { display: grid; grid-template-columns: 9.5em 1fr; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
+.spec dt { margin: 0; letter-spacing: .1em; text-transform: uppercase; font-size: 12px; color: var(--ink-soft); padding-top: 2px; }
+.spec dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.status { font-family: var(--voice); font-style: italic; color: var(--ink-soft); font-size: 16px; margin: 0; }
+
+@media (max-width: 380px) {
+  .card { padding: 22px 18px; }
+  h2 { font-size: 22px; }
+  .spec div { grid-template-columns: 1fr; gap: 2px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+<main class="shell">
+
+  <!-- intro -->
+  <section id="intro" class="intro">
+    <svg class="room" viewBox="0 0 360 230" role="img" aria-label="A line drawing of a small room with a bed, a window and a lamp">
+      <g fill="none" stroke="#1B2145" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 200 L340 200"/>
+        <rect x="40" y="38" width="96" height="78" rx="6"/>
+        <path d="M88 38 V116 M40 77 H136"/>
+        <path d="M30 200 V150 Q30 136 44 136 H170 Q184 136 184 150 V200"/>
+        <path d="M30 168 H184"/>
+        <rect x="44" y="142" width="46" height="20" rx="8" fill="#FBFAF6"/>
+        <path d="M216 200 V128 H306 V200 M216 154 H306"/>
+        <path d="M252 0 V52"/>
+        <path d="M232 70 L240 52 H264 L272 70 Z" fill="#E2231A"/>
+      </g>
+      <path class="lampglow" d="M232 72 L196 128 H308 L272 72 Z" fill="#FFE38A" opacity=".85"/>
+      <circle cx="110" cy="60" r="10" fill="#FFE38A"/>
+      <rect x="226" y="112" width="18" height="16" rx="3" fill="#E2231A"/>
+      <rect x="250" y="106" width="12" height="22" rx="2" fill="#1B2145"/>
+      <rect x="266" y="114" width="26" height="14" rx="2" fill="#C9CDEA"/>
+    </svg>
+    <h1>The Dream Room <em>Personality</em> Test</h1>
+    <p class="lede">Answer honestly. There are no wrong rooms.</p>
+    <div class="facts"><span>25 questions</span><span>about 8 minutes</span><span>skip anything</span></div>
+    <div>
+      <label class="small" for="name">What should we call you?</label>
+      <input type="text" id="name" autocomplete="nickname" placeholder="Your name or nickname">
+    </div>
+    <div class="nav"><button class="btn go" id="start" type="button">Start the test</button></div>
+  </section>
+
+  <!-- question -->
+  <section id="quiz" hidden>
+    <div class="bar"><span id="partLabel">Part 1</span><span><b id="count">01</b> / 25</span></div>
+    <div class="track" aria-hidden="true"><i id="fill"></i></div>
+    <form id="card" class="card" novalidate></form>
+    <div class="nav">
+      <button class="btn back" id="back" type="button">Back</button>
+      <button class="btn go" id="next" type="button">Next</button>
+    </div>
+  </section>
+
+  <!-- result -->
+  <section id="result" class="intro result" hidden>
+    <span class="tag">Your room personality</span>
+    <h1 id="rTitle"></h1>
+    <p id="rText"></p>
+    <dl class="spec" id="rSpec"></dl>
+    <p class="status" id="rStatus"></p>
+    <div class="nav"><button class="btn back" id="again" type="button">Change my answers</button></div>
+  </section>
+
+</main>
+
+<script>
+/* Paste the Apps Script web-app URL here (ends in /exec). Empty = answers are only kept on this device. */
+const ENDPOINT = '';
+
+const PARTS = {
+  1: { label: 'Part 1 · Things you love', chip: '#FFE38A' },
+  2: { label: 'Part 2 · Your dream room', chip: '#C9CDEA' },
+  3: { label: 'Part 3 · Bonus round',     chip: '#F7B7A8' },
+};
+
+const Q = [
+  { p:1, id:'colours',  q:"Your favourite colour(s)? And one colour you can't stand?", type:'long', ph:"Love:\nCan't stand:" },
+  { p:1, id:'movies',   q:'Your top 3 movies of all time?', type:'long', ph:'1.\n2.\n3.' },
+  { p:1, id:'shows',    q:'Your favourite TV show or anime?', type:'text' },
+  { p:1, id:'games',    q:'Your favourite game?', hint:'Mobile, console, board games, anything.', type:'text' },
+  { p:1, id:'books',    q:'Your favourite books?', hint:'Besides the obvious one. What are #2 and #3?', type:'long' },
+  { p:1, id:'music',    q:'Your favourite songs or artists?', hint:'Outside of TWICE too.', type:'long' },
+  { p:1, id:'flower',   q:'Your favourite flower or plant?', type:'text' },
+  { p:1, id:'animal',   q:"Your favourite animal? Any pet you've always wanted?", type:'text' },
+  { p:1, id:'season',   q:'Your favourite season and weather?', type:'text', ph:'e.g. autumn, light rain' },
+  { p:1, id:'smell',    q:'A smell you love?', type:'text' },
+  { p:1, id:'places',   q:"The place you most want to go? And the best place you've ever been?", type:'long', ph:'Most want to go:\nBest so far:' },
+  { p:1, id:'snacks',   q:'Your favourite snacks and drinks?', type:'long' },
+
+  { p:2, id:'vibe',     q:"Your dream room's vibe?", type:'chips', multi:false, other:true,
+    options:['Cosy wood','Clean minimalist','Vintage','Korean aesthetic','Princess','Library'] },
+  { p:2, id:'mustHave', q:'Five things your dream room absolutely must have.', type:'long', ph:'1.\n2.\n3.\n4.\n5.' },
+  { p:2, id:'bed',      q:'Describe your dream bed.', hint:'Size, bedding colour, canopy or not, what lives on it.', type:'long' },
+  { p:2, id:'walls',    q:'What goes on the walls?', hint:'Pick as many as you like.', type:'chips', multi:true, other:true,
+    options:['Posters','Photos','Art','Fairy lights','Shelves','Mirrors','Plants'] },
+  { p:2, id:'light',    q:'What kind of lighting?', hint:'Pick as many as you like.', type:'chips', multi:true, other:true,
+    options:['Warm lamps','Star lights','Neon sign','Floor lamp','Candles','Big window light'] },
+  { p:2, id:'view',     q:"What's the view out the window?", type:'text' },
+  { p:2, id:'corner',   q:"Is there a special corner? What's it for?", hint:'Reading, fangirling, makeup, rehearsing lines…', type:'long' },
+  { p:2, id:'secret',   q:'Your room has a secret hidden space. What is inside?', type:'long' },
+  { p:2, id:'sound',    q:"What's playing in the background?", type:'text' },
+  { p:2, id:'floor',    q:"What's on the floor?", hint:'Pick as many as you like.', type:'chips', multi:true, other:true,
+    options:['Fluffy rug','Beanbag','Floor cushions','Wooden floor','Big soft carpet'] },
+
+  { p:3, id:'quote',    q:'A favourite quote or movie line?', type:'long' },
+  { p:3, id:'phrase',   q:'A phrase you say way too often?', type:'text' },
+  { p:3, id:'food',     q:'If you were a food, what would you be?', type:'text' },
+];
+
+const RESULTS = {
+  'Cosy wood':        ['The Hot Cocoa Hermit', 'You build a nest, invite exactly the right people into it, and somehow it always smells like something baking. Leaving the house is optional. Leaving the blanket is not.'],
+  'Clean minimalist': ['The Quiet Main Character', 'Three objects, perfectly placed, each with a backstory. People walk in and immediately lower their voice. You call it calm. They call it a vibe.'],
+  'Vintage':          ['The Old Soul with Wi-Fi', 'Your room is a museum of things that were cool forty years ago and are cool again because you said so. Somewhere in it is a record you have never actually played.'],
+  'Korean aesthetic': ['The Soft-Focus Idol', 'Everything is pastel, the lighting is flattering from every angle, and there is a dedicated shelf for things that are technically merch. Camera-ready at all times.'],
+  'Princess':         ['The Velvet Royal', 'Canopy. Pillows in a quantity that worries engineers. You do not have a bed, you have a throne that happens to be horizontal.'],
+  'Library':          ['The Midnight Librarian', 'Stacks of books in an order only you understand, a lamp that stays on far too late, and at least one note in the margin that is funnier than the actual book.'],
+  'other':            ['The Unclassifiable Dreamer', 'None of the boxes fit, so you drew your own. The experts were confused. The experts are still confused. This is a compliment.'],
+};
+
+const KEY = 'dreamroom-v1';
+let state = { name: '', i: 0, a: {} };
+try { const s = JSON.parse(localStorage.getItem(KEY) || 'null'); if (s && s.a) state = s; } catch (e) {}
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+
+const $ = (id) => document.getElementById(id);
+const pad = (n) => String(n).padStart(2, '0');
+const show = (id) => ['intro','quiz','result'].forEach(s => $(s).hidden = s !== id);
+
+function render() {
+  const item = Q[state.i];
+  const part = PARTS[item.p];
+  $('partLabel').textContent = part.label;
+  $('count').textContent = pad(state.i + 1);
+  $('fill').style.width = ((state.i) / Q.length * 100) + '%';
+  $('back').disabled = state.i === 0;
+
+  const card = $('card');
+  card.style.setProperty('--chip', part.chip);
+  card.innerHTML = '';
+  card.style.animation = 'none'; void card.offsetWidth; card.style.animation = '';
+
+  const top = document.createElement('div');
+  top.innerHTML = `<div class="part"></div>`;
+  top.firstChild.textContent = part.label.split(' · ')[1];
+  const num = document.createElement('div'); num.className = 'num'; num.textContent = pad(state.i + 1);
+  const h = document.createElement('h2'); h.id = 'qtext'; h.textContent = item.q;
+  card.append(top, num, h);
+  if (item.hint) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = item.hint; card.append(p); }
+
+  const saved = state.a[item.id];
+  if (item.type === 'text' || item.type === 'long') {
+    const el = document.createElement(item.type === 'long' ? 'textarea' : 'input');
+    if (item.type === 'text') el.type = 'text';
+    el.id = 'ans-' + item.id;
+    el.setAttribute('aria-labelledby', 'qtext');
+    el.placeholder = item.ph || 'Type here';
+    el.value = saved || '';
+    el.addEventListener('input', () => { state.a[item.id] = el.value; save(); updateNext(); });
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (item.type === 'text' || e.metaKey || e.ctrlKey)) { e.preventDefault(); next(); }
+    });
+    card.append(el);
+    setTimeout(() => { if (window.matchMedia('(hover: hover)').matches) el.focus(); }, 60);
+  } else {
+    const val = saved || { picks: [], other: '' };
+    const wrap = document.createElement('div'); wrap.className = 'chips'; wrap.setAttribute('role', 'group'); wrap.setAttribute('aria-labelledby', 'qtext');
+    item.options.forEach(opt => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip'; b.textContent = opt;
+      b.setAttribute('aria-pressed', val.picks.includes(opt));
+      b.addEventListener('click', () => {
+        if (item.multi) {
+          val.picks = val.picks.includes(opt) ? val.picks.filter(x => x !== opt) : [...val.picks, opt];
+        } else {
+          val.picks = val.picks.includes(opt) ? [] : [opt];
+          if (val.picks.length) { val.other = ''; if (other) other.value = ''; }
+        }
+        wrap.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', val.picks.includes(c.textContent)));
+        state.a[item.id] = val; save(); updateNext();
+      });
+      wrap.append(b);
+    });
+    card.append(wrap);
+    let other = null;
+    if (item.other) {
+      other = document.createElement('input');
+      other.type = 'text'; other.id = 'other-' + item.id;
+      other.placeholder = item.multi ? 'Anything else?' : 'Something else? Describe it';
+      other.setAttribute('aria-label', 'Other answer');
+      other.value = val.other || '';
+      other.addEventListener('input', () => {
+        val.other = other.value;
+        if (!item.multi && other.value.trim()) { val.picks = []; wrap.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', 'false')); }
+        state.a[item.id] = val; save(); updateNext();
+      });
+      other.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); next(); } });
+      card.append(other);
+    }
+  }
+  updateNext();
+}
+
+function answered(item) {
+  const v = state.a[item.id];
+  if (!v) return false;
+  if (typeof v === 'string') return v.trim().length > 0;
+  return v.picks.length > 0 || (v.other || '').trim().length > 0;
+}
+function updateNext() {
+  const item = Q[state.i];
+  const last = state.i === Q.length - 1;
+  $('next').textContent = last ? 'See my room' : (answered(item) ? 'Next' : 'Skip');
+}
+
+function flat(item) {
+  const v = state.a[item.id];
+  if (!v) return '';
+  if (typeof v === 'string') return v.trim();
+  return [...v.picks, (v.other || '').trim()].filter(Boolean).join(', ');
+}
+
+function next() {
+  if (state.i < Q.length - 1) { state.i++; save(); render(); window.scrollTo(0, 0); }
+  else finish();
+}
+function back() { if (state.i > 0) { state.i--; save(); render(); } }
+
+function pickResult() {
+  const v = state.a.vibe;
+  const key = v && v.picks && v.picks[0] ? v.picks[0] : 'other';
+  return RESULTS[key] || RESULTS.other;
+}
+
+function firstLine(s) {
+  return (s || '').split('\n').map(x => x.replace(/^\s*\d+[.)]\s*/, '').trim()).filter(Boolean)[0] || '';
+}
+
+async function finish() {
+  $('fill').style.width = '100%';
+  const [title, text] = pickResult();
+  $('rTitle').textContent = title;
+  $('rText').textContent = text;
+
+  const rows = [
+    ['Lucky object', firstLine(state.a.mustHave)],
+    ['Window view',  flat(Q.find(q => q.id === 'view'))],
+    ['Soundtrack',   flat(Q.find(q => q.id === 'sound'))],
+    ['Room snack',   firstLine((state.a.snacks || '').replace(/,/g, '\n'))],
+    ['Spirit food',  flat(Q.find(q => q.id === 'food'))],
+  ].filter(r => r[1]);
+  const spec = $('rSpec'); spec.innerHTML = '';
+  rows.forEach(([k, v]) => {
+    const d = document.createElement('div');
+    const dt = document.createElement('dt'); dt.textContent = k;
+    const dd = document.createElement('dd'); dd.textContent = v;
+    d.append(dt, dd); spec.append(d);
+  });
+  show('result'); window.scrollTo(0, 0);
+
+  const answers = {};
+  Q.forEach((q, n) => { answers[pad(n + 1) + ' ' + q.id] = flat(q); });
+  const payload = { name: state.name, result: title, answers };
+  const status = $('rStatus');
+  if (!ENDPOINT) { status.textContent = 'Results certified by a panel of very serious room experts.'; return; }
+  status.textContent = 'Sending your blueprint to the experts…';
+  try {
+    await fetch(ENDPOINT, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+    status.textContent = 'Results certified by a panel of very serious room experts.';
+    state.sent = true; save();
+  } catch (e) {
+    status.textContent = "The experts didn't get it (connection problem). Tap “Change my answers”, go to the last question and press “See my room” again.";
+  }
+}
+
+$('name').value = state.name || '';
+$('name').addEventListener('input', (e) => { state.name = e.target.value; save(); });
+$('name').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('start').click(); });
+$('start').addEventListener('click', () => { show('quiz'); render(); });
+$('next').addEventListener('click', next);
+$('back').addEventListener('click', back);
+$('again').addEventListener('click', () => { state.i = Q.length - 1; show('quiz'); render(); });
+$('card').addEventListener('submit', (e) => e.preventDefault());
+</script>
+</body>
+</html>
