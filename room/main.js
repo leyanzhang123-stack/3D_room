@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 
 /* ------------------------------------------------------------------
    Units are metres. x runs left → right along the back wall,
@@ -43,14 +44,18 @@ camera.position.copy(HOME_TARGET).addScaledVector(HOME_DIR, homeDistance());
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.copy(HOME_TARGET);
 controls.enableDamping = true;
-controls.enablePan = false;
-controls.minDistance = 2.2;
+controls.enablePan = true;
+controls.screenSpacePanning = true;
+controls.panSpeed = 0.9;
+controls.zoomSpeed = 1.1;
+controls.touches = { ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN };
+controls.minDistance = 0.5;
 controls.maxDistance = 40;
 controls.minPolarAngle = 0.55;
 controls.maxPolarAngle = 1.38;
-controls.minAzimuthAngle = 0.08;
-controls.maxAzimuthAngle = 1.35;
-controls.rotateSpeed = 0.6;
+controls.minAzimuthAngle = 0.02;
+controls.maxAzimuthAngle = 1.5;
+controls.rotateSpeed = 0.9;
 
 /* ---------- helpers ---------- */
 const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.78, metalness: 0, ...o });
@@ -444,6 +449,11 @@ const wwTex = canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#D62D24'; g.fill
   for (let k = 0; k < 6; k++) at(sphere(0.008, mat('#FFFFFF'), 6), Math.cos(k) * 0.025, 0.06, Math.sin(k) * 0.025, bowl);
   put(bowl, 0.27, 0.56, NZ + 0.24); }
 
+const snackSpot = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.95, 0.62), new THREE.MeshBasicMaterial());
+snackSpot.visible = false; snackSpot.position.set(0.27, 0.48, NZ + 0.24); scene.add(snackSpot);
+hotspot(snackSpot, 'snacks', 'The snack corner', '', { dist: 1.15, dir: [0.6, 0.75, 1], viewOnly: true });
+hotspot(cab, 'cabinet', 'Little things from everywhere', '', { dist: 2.1, dir: [0.5, 0.2, 1], viewOnly: true });
+
 // strung star lights on the left wall above the bed
 const starBulbs = [];
 [[2.0, 0.1], [1.78, 0.12], [1.58, 0.09]].forEach(([y, sag]) =>
@@ -463,7 +473,8 @@ const TX = 2.62, TZ = 2.4, TH = 0.46;
 put(cyl(0.18, 0.2, 0.025, mat(COL.walnut)), TX, 0, TZ);
 put(cyl(0.035, 0.035, TH - 0.06, mat(COL.walnut)), TX, 0.02, TZ);
 put(cyl(0.4, 0.4, 0.04, mat(COL.cherry, { roughness: 0.5 }), 48), TX, TH - 0.04, TZ);
-{ const cake = new THREE.Group(), cm = mat('#F6EEE4', { roughness: 0.85 });
+const cake = new THREE.Group(), cakeFlames = []; let cakeLight;
+{ const cm = mat('#F6EEE4', { roughness: 0.85 });
   put(cyl(0.22, 0.22, 0.012, mat('#FBF6EF', { roughness: 0.3 }), 40), 0, 0, 0, cake);
   put(cyl(0.16, 0.16, 0.13, cm, 40), 0, 0.012, 0, cake);
   for (let k = 0; k < 22; k++) { const a = k / 22 * Math.PI * 2; at(sphere(0.016, cm, 8), Math.cos(a) * 0.16, 0.025, Math.sin(a) * 0.16, cake); at(sphere(0.013, cm, 8), Math.cos(a) * 0.15, 0.142, Math.sin(a) * 0.15, cake); }
@@ -472,8 +483,8 @@ put(cyl(0.4, 0.4, 0.04, mat(COL.cherry, { roughness: 0.5 }), 48), TX, TH - 0.04,
   [[-0.03, 0.02], [0.035, -0.02]].forEach(([dx, dz]) => { const c = new THREE.Group();
     at(cyl(0.006, 0.006, 0.09, mat('#F2E6D8')), 0, 0.045, 0, c);
     const fl = new THREE.Mesh(new THREE.SphereGeometry(0.007, 8, 8), glowMat('#FFC27A', 5)); fl.scale.set(1, 2, 1); fl.position.y = 0.105; c.add(fl);
-    c.position.set(TX + dx, TH + 0.142, TZ + dz); scene.add(c); flickers.push({ fl, seed: Math.random() * 50 }); });
-  const l = warmLight(TX, TH + 0.4, TZ, 1.3, 3.4); flickers.push({ l, base: 1.3, seed: 3 }); }
+    c.position.set(TX + dx, TH + 0.142, TZ + dz); scene.add(c); cakeFlames.push(fl); flickers.push({ fl, seed: Math.random() * 50, cake: true }); });
+  const l = warmLight(TX, TH + 0.4, TZ, 1.3, 3.4); cakeLight = { l, base: 1.3, seed: 3 }; flickers.push(cakeLight); }
 // two pillar candles on the floor, left of the window
 candle(2.06, 0, 0.32, 0.16, 0.04, 0.6); candle(1.93, 0, 0.42, 0.1, 0.035, 0);
 
@@ -492,19 +503,41 @@ const tv = new THREE.Group(); scene.add(tv);
 hotspot(tv, 'tv', 'Movie night', 'Her favourite film clips will play here.', { dist: 1.9, dir: [-0.2, 0.25, 1], local: true });
 
 /* ---------- the guide dog ---------- */
-const dogPivot = new THREE.Group(); dogPivot.position.set(3.45, 0.02, 3.2); dogPivot.rotation.y = 1.35; scene.add(dogPivot);
-hotspot(dogPivot, 'dog', 'Your guide', 'Hints from the dog will go here.', { dist: 1.7, dir: [0.4, 0.45, 1] });
-const loadingEl = document.getElementById('loading');
+const DOG_HOME = [3.45, 3.2];
+const dogPivot = new THREE.Group(); scene.add(dogPivot);
+const dogState = { x: DOG_HOME[0], z: DOG_HOME[1], heading: 1.35, path: [], onArrive: null };
+dogPivot.position.set(dogState.x, 0.02, dogState.z); dogPivot.rotation.y = dogState.heading;
+hotspot(dogPivot, 'dog', 'Your guide', 'Drag to look around, pinch to zoom, double-tap anything to get closer.', { dist: 1.7, dir: [0.4, 0.45, 1] });
+
+let dogModel = null; const dogWaiting = [];
+const onDog = (fn) => (dogModel ? fn() : dogWaiting.push(fn));
 new GLTFLoader().load('./assets/dog.glb', (gltf) => {
   const dog = gltf.scene;
-  const box = new THREE.Box3().setFromObject(dog), size = box.getSize(new THREE.Vector3());
-  const s = 0.74 / size.y; dog.scale.setScalar(s);
-  const b2 = new THREE.Box3().setFromObject(dog), c = b2.getCenter(new THREE.Vector3());
-  dog.position.set(-c.x, -b2.min.y, -c.z);
-  dog.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; if (o.material) o.material.roughness = 0.85; } });
-  dogPivot.add(dog);
-  loadingEl.classList.add('gone'); showBubble();
-}, undefined, () => { loadingEl.classList.add('gone'); });
+  dog.traverse(o => {
+    if (!o.isMesh) return;
+    // weld the faceted low-poly mesh and smooth it so the dog reads softer and rounder
+    let g = o.geometry; g.deleteAttribute('normal'); if (g.attributes.uv) g.deleteAttribute('uv');
+    g = mergeVertices(g, 1e-4); g.computeVertexNormals(); o.geometry = g;
+    o.castShadow = o.receiveShadow = true;
+    o.material.roughness = 0.9; o.material.flatShading = false; o.material.needsUpdate = true;
+  });
+  const size = new THREE.Box3().setFromObject(dog).getSize(new THREE.Vector3());
+  const s = 0.74 / size.y;
+  dog.scale.set(s * 1.4, s * 1.02, s * 1.05); // wider and a touch fuller than the original
+  const b = new THREE.Box3().setFromObject(dog), c = b.getCenter(new THREE.Vector3());
+  dog.position.set(-c.x, -b.min.y, -c.z);
+  const holder = new THREE.Group(); holder.add(dog);
+  dogModel = holder; dogPivot.add(holder.clone());
+  dogWaiting.splice(0).forEach(f => f());
+});
+
+const HUB = [3.3, 1.85];
+function walkDog([x, z], done) {
+  const far = Math.hypot(x - dogState.x, z - dogState.z) > 1.3;
+  dogState.path = far ? [HUB, [x, z]] : [[x, z]];
+  dogState.onArrive = done;
+}
+const angleLerp = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
 
 /* ---------- sparkles over tappable things ---------- */
 const sparkTex = canvasTex(64, 64, (g) => {
@@ -513,74 +546,232 @@ const sparkTex = canvasTex(64, 64, (g) => {
   g.fillStyle = 'rgba(255,255,255,.95)'; g.beginPath(); g.moveTo(32, 6); g.lineTo(35, 29); g.lineTo(58, 32); g.lineTo(35, 35); g.lineTo(32, 58); g.lineTo(29, 35); g.lineTo(6, 32); g.lineTo(29, 29); g.fill();
 });
 const sparkles = [];
+let sparklesOn = false;
 function sparkleAbove(group, dy = 0.12) {
   const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: sparkTex, transparent: true, depthWrite: false }));
-  sp.scale.setScalar(0.14); scene.add(sp);
+  sp.scale.setScalar(0.14); sp.visible = false; scene.add(sp);
   sparkles.push({ sp, group, dy, seed: Math.random() * 10 });
 }
-hotspots.forEach(h => sparkleAbove(h, h.userData.hotspot.id === 'dog' ? 0.18 : 0.12));
+hotspots.filter(h => !h.userData.hotspot.view.viewOnly).forEach(h => sparkleAbove(h, h.userData.hotspot.id === 'dog' ? 0.18 : 0.12));
 
-/* ---------- interaction ---------- */
-const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+/* ---------- card + bubble ---------- */
 const tip = document.getElementById('tip'), bubble = document.getElementById('bubble');
 const card = document.getElementById('card'), cardTitle = document.getElementById('cardTitle'), cardText = document.getElementById('cardText');
+const cardActions = document.getElementById('cardActions'), meter = document.getElementById('meter');
+function showCard(title, text, actions = []) {
+  cardTitle.textContent = title; cardText.textContent = text || ''; cardText.hidden = !text;
+  meter.hidden = true; cardActions.innerHTML = '';
+  actions.forEach(a => { const b = document.createElement('button'); b.type = 'button'; b.textContent = a.label; if (a.primary) b.className = 'primary'; b.addEventListener('click', a.fn); cardActions.append(b); });
+  card.classList.add('open');
+}
+const hideCard = () => card.classList.remove('open');
+let bubbleOn = false;
+function say(text) { bubble.textContent = text; bubble.classList.remove('hidden'); bubbleOn = true; }
+function hush() { bubble.classList.add('hidden'); bubbleOn = false; }
+
+/* ---------- camera moves ---------- */
+let tween = null;
+function flyTo(pos, target, ms = 1100) {
+  tween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: target, start: performance.now(), ms };
+}
+function frameView(obj, view) {
+  const c = new THREE.Box3().setFromObject(view.aim || obj).getCenter(new THREE.Vector3());
+  const dir = new THREE.Vector3(...view.dir).normalize();
+  if (view.local) dir.applyQuaternion(obj.quaternion);
+  flyTo(c.clone().addScaledVector(dir, view.dist * Math.max(1, 0.8 / camera.aspect)), c);
+}
+const flyHome = () => flyTo(HOME_TARGET.clone().addScaledVector(HOME_DIR, homeDistance()), HOME_TARGET.clone());
+function focusOn(g) {
+  const h = g.userData.hotspot;
+  frameView(g, h.view);
+  showCard(h.title, h.text, [{ label: 'Back to the room', primary: true, fn: goHome }]);
+  tip.classList.remove('on');
+}
+function goHome() { flyHome(); hideCard(); }
+
+/* ---------- tapping, double-tapping, hovering ---------- */
+const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
+function aim(ev) { ptr.set(ev.clientX / innerWidth * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ptr, camera); }
 function pick(ev) {
-  ptr.set(ev.clientX / innerWidth * 2 - 1, -(ev.clientY / innerHeight) * 2 + 1);
-  ray.setFromCamera(ptr, camera);
+  aim(ev);
   const hit = ray.intersectObjects(hotspots, true)[0];
   if (!hit) return null;
   let o = hit.object; while (o && !o.userData.hotspot) o = o.parent;
   return o;
 }
-let down = null;
-renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; });
+function zoomToPoint(ev) {
+  aim(ev);
+  const hit = ray.intersectObjects(scene.children, true).find(h => h.object.visible && !h.object.isSprite && !h.object.isPoints && h.object !== backdrop);
+  if (!hit) return;
+  const off = camera.position.clone().sub(controls.target).setLength(1.5 * Math.max(1, 0.8 / camera.aspect));
+  flyTo(hit.point.clone().add(off), hit.point.clone(), 800);
+}
+let down = null, lastTap = { t: 0, x: 0, y: 0 };
+renderer.domElement.addEventListener('pointerdown', e => { down = { x: e.clientX, y: e.clientY }; tween = null; });
 renderer.domElement.addEventListener('pointerup', e => {
-  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 6) return;
+  if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 8) return;
+  const now = performance.now();
+  if (now - lastTap.t < 330 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) { lastTap.t = 0; zoomToPoint(e); return; }
+  lastTap = { t: now, x: e.clientX, y: e.clientY };
+  if (tour.active) return;
   const g = pick(e); if (g) focusOn(g);
 });
 renderer.domElement.addEventListener('pointermove', e => {
-  if (isMobile) return;
+  if (isMobile || tour.active) return;
   const g = pick(e);
   renderer.domElement.style.cursor = g ? 'pointer' : '';
   if (g) { tip.textContent = g.userData.hotspot.title; tip.style.left = e.clientX + 'px'; tip.style.top = e.clientY + 'px'; tip.classList.add('on'); }
   else tip.classList.remove('on');
 });
+addEventListener('keydown', e => { if (e.key === 'Escape' && !tour.active) goHome(); });
 
-let tween = null;
-function flyTo(pos, target, ms = 1100) {
-  tween = { p0: camera.position.clone(), t0: controls.target.clone(), p1: pos, t1: target, start: performance.now(), ms };
+/* ---------- blowing out the candles ---------- */
+const blow = { level: 0, done: false };
+async function listenForBlow() {
+  showCard('Make a wish', 'Listening… blow into your phone.', [{ label: 'Tap to blow instead', fn: blowOut }]);
+  meter.hidden = false;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+    const AC = window.AudioContext || window.webkitAudioContext, ac = new AC(), an = ac.createAnalyser();
+    an.fftSize = 1024; ac.createMediaStreamSource(stream).connect(an);
+    const buf = new Float32Array(an.fftSize); let over = 0;
+    const stop = () => { stream.getTracks().forEach(t => t.stop()); ac.close(); blow.level = 0; };
+    const tick = () => {
+      if (blow.done) { stop(); return; }
+      an.getFloatTimeDomainData(buf);
+      let sum = 0; for (let k = 0; k < buf.length; k++) sum += buf[k] * buf[k];
+      const rms = Math.sqrt(sum / buf.length);
+      blow.level = Math.min(1, rms * 7); meter.firstElementChild.style.width = (blow.level * 100) + '%';
+      over = rms > 0.08 ? over + 1 : Math.max(0, over - 2);
+      if (over > 14) { stop(); blowOut(); } else requestAnimationFrame(tick);
+    };
+    tick();
+  } catch (err) {
+    showCard('Make a wish', "The microphone isn't available here, so tap instead.", [{ label: 'Tap to blow', primary: true, fn: blowOut }]);
+  }
 }
-function focusOn(g) {
-  const h = g.userData.hotspot;
-  const c = new THREE.Box3().setFromObject(h.view.aim || g).getCenter(new THREE.Vector3());
-  const dir = new THREE.Vector3(...h.view.dir).normalize();
-  if (h.view.local) dir.applyQuaternion(g.quaternion);
-  flyTo(c.clone().addScaledVector(dir, h.view.dist * Math.max(1, 0.8 / camera.aspect)), c);
-  cardTitle.textContent = h.title; cardText.textContent = h.text; card.classList.add('open');
-  tip.classList.remove('on');
+function blowOut() {
+  if (blow.done) return;
+  blow.done = true; blow.level = 0;
+  cakeFlames.forEach(f => { f.visible = false; });
+  cakeLight.base = 0.15;
+  say('Happy birthday, Aida! Your wish is safe with me.');
+  showCard('Wish made', '', [{ label: 'Next', primary: true, fn: () => runStep(tour.i + 1) }]);
 }
-function goHome() {
-  flyTo(HOME_TARGET.clone().addScaledVector(HOME_DIR, homeDistance()), HOME_TARGET.clone());
-  card.classList.remove('open');
-}
-document.getElementById('cardClose').addEventListener('click', goHome);
-addEventListener('keydown', e => { if (e.key === 'Escape') goHome(); });
 
-let bubbleOn = false;
-function showBubble() { bubbleOn = true; bubble.classList.remove('hidden'); setTimeout(() => { bubbleOn = false; bubble.classList.add('hidden'); }, 9000); }
+/* ---------- the guided tour (draft lines, to be replaced) ---------- */
+const TOUR = [
+  { dog: DOG_HOME, home: true, title: 'Hi Aida!', line: "Woof! I'm your guide today. Let me show you around, then the room is all yours.", next: "Let's go" },
+  { dog: [2.95, 1.75], obj: cake, view: { dist: 1.7, dir: [0.35, 0.8, 1] }, title: 'Make a wish', line: 'First, the cake. Make a wish, then blow out the candles. Really blow, right into your phone!', blow: true },
+  { dog: [2.45, 1.0], obj: photoWall, title: 'Our photo wall', line: 'Every photo up here is a little piece of the two of you.' },
+  { dog: [2.4, 1.05], obj: bar, title: 'The record player', line: 'Pick a song. Any song.' },
+  { dog: [3.3, 1.4], obj: frame, view: { dist: 1.5, dir: [0.15, 0.55, 1] }, title: 'Your desk', line: 'Your books, your snowdrops, and a photo of you two.' },
+  { dog: [3.95, 2.3], obj: tv, title: 'Movie night', line: 'Your favourite scenes, ready whenever you are.' },
+  { dog: [2.45, 1.95], obj: gift, view: { dist: 1.7, dir: [0.35, 0.85, 0.9] }, title: 'Something on the bed', line: 'A TWICE album, and a mysterious box. Open the box. Trust me.' },
+  { dog: [1.1, 3.25], obj: snackSpot, title: 'The snack corner', line: 'Want Want, beef jerky, mămăligă. Everything you like.' },
+  { dog: [2.45, 1.0], obj: cab, title: 'Little things from everywhere', line: 'A snow globe, a music box, Paris and Québec. Look closely.' },
+  { dog: DOG_HOME, home: true, title: "That's the tour!", line: 'The room is yours now. Tap anything that sparkles, drag to look around, double-tap to get closer.', next: 'Explore on my own' },
+];
+const tour = { active: false, i: 0 };
+let toured = false; try { toured = localStorage.getItem('room-toured') === '1'; } catch (e) {}
+function runStep(i) {
+  tour.i = i; const st = TOUR[i];
+  hush(); hideCard();
+  walkDog(st.dog, () => say(st.line));
+  if (st.home) flyHome(); else frameView(st.obj, st.view || st.obj.userData.hotspot.view);
+  const acts = [];
+  if (st.blow && !blow.done) {
+    acts.push({ label: 'Blow with my mic', primary: true, fn: listenForBlow }, { label: 'Tap to blow', fn: blowOut });
+  } else {
+    if (i > 0) acts.push({ label: 'Back', fn: () => runStep(i - 1) });
+    acts.push({ label: st.next || 'Next', primary: true, fn: () => (i < TOUR.length - 1 ? runStep(i + 1) : endTour()) });
+  }
+  if (i === 0 && toured) acts.push({ label: 'Skip the tour', fn: endTour });
+  setTimeout(() => showCard(st.title, '', acts), 700);
+}
+function endTour() {
+  tour.active = false; sparklesOn = true; hideCard();
+  walkDog(DOG_HOME, () => say('Tap me any time for a hint.'));
+  setTimeout(hush, 6000);
+  flyHome();
+  try { localStorage.setItem('room-toured', '1'); } catch (e) {}
+}
+function startTour() { onDog(() => { tour.active = true; runStep(0); }); }
+
+/* ---------- the front door ---------- */
+const porch = document.getElementById('porch');
+let porchR = null, porchScene, porchCam; const porchDogs = [];
+{
+  porchR = new THREE.WebGLRenderer({ canvas: document.getElementById('porchDogs'), alpha: true, antialias: true });
+  porchR.setPixelRatio(Math.min(devicePixelRatio, 2));
+  porchR.outputColorSpace = THREE.SRGBColorSpace; porchR.toneMapping = THREE.ACESFilmicToneMapping;
+  porchScene = new THREE.Scene();
+  porchScene.add(new THREE.HemisphereLight('#FFE6CC', '#3A2418', 1.6));
+  const d = new THREE.DirectionalLight('#FFD2A0', 2.4); d.position.set(0.3, 1, 2); porchScene.add(d);
+  porchCam = new THREE.OrthographicCamera(0, 1, 0, -1, -2000, 2000);
+  onDog(() => {
+    ['spotL', 'spotR'].forEach((id, i) => {
+      const p = new THREE.Group(); p.add(dogModel.clone());
+      p.userData = { el: document.getElementById(id), side: i ? -1 : 1, seed: i * 2 };
+      porchScene.add(p); porchDogs.push(p);
+    });
+    sizePorch();
+  });
+}
+function sizePorch() {
+  if (!porchR) return;
+  porchR.setSize(innerWidth, innerHeight);
+  Object.assign(porchCam, { left: 0, right: innerWidth, top: 0, bottom: -innerHeight }); porchCam.updateProjectionMatrix();
+  porchDogs.forEach(p => {
+    const r = p.userData.el.getBoundingClientRect();
+    p.scale.setScalar(r.height / 0.8);
+    p.position.set(r.left + r.width / 2, -r.bottom, 0);
+    p.rotation.set(0.28, p.userData.side * 0.75, 0);
+  });
+}
+const snowCv = document.getElementById('porchSnow'), snowCtx = snowCv.getContext('2d');
+const flakes = Array.from({ length: 150 }, () => ({ x: Math.random(), y: Math.random(), r: 0.8 + Math.random() * 2.4, v: 0.02 + Math.random() * 0.05, d: Math.random() * 6 }));
+function sizeSnow() { snowCv.width = innerWidth * devicePixelRatio; snowCv.height = innerHeight * devicePixelRatio; }
+sizeSnow();
+function drawSnow(t, dt) {
+  const w = snowCv.width, h = snowCv.height, k = devicePixelRatio;
+  snowCtx.clearRect(0, 0, w, h);
+  flakes.forEach(f => {
+    if (!reduceMotion) { f.y += f.v * dt; f.x += Math.sin(t * 0.7 + f.d) * 0.0004; if (f.y > 1.02) { f.y = -0.02; f.x = Math.random(); } }
+    snowCtx.globalAlpha = 0.55 + f.r / 6; snowCtx.fillStyle = '#fff';
+    snowCtx.beginPath(); snowCtx.arc(f.x * w, f.y * h, f.r * k, 0, Math.PI * 2); snowCtx.fill();
+  });
+}
+let entering = false, roomVisible = false;
+document.getElementById('door').addEventListener('click', () => {
+  if (entering) return; entering = true; roomVisible = true;
+  const stage = document.getElementById('stage'), r = document.getElementById('door').getBoundingClientRect();
+  stage.style.transformOrigin = `${r.left + r.width / 2}px ${r.top + r.height * 0.55}px`;
+  porch.classList.add('opening');
+  setTimeout(() => porch.classList.add('zoom'), 1150);
+  setTimeout(() => { porch.classList.add('gone'); startTour(); }, 2250);
+  setTimeout(() => { porch.remove(); porchR.dispose(); porchR.forceContextLoss(); porchR = null; }, 3300);
+});
 
 addEventListener('resize', () => {
   camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
+  if (porchR) { sizePorch(); sizeSnow(); }
 });
 camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
 camera.position.copy(HOME_TARGET).addScaledVector(HOME_DIR, homeDistance());
 
 /* ---------- loop ---------- */
-const clock = new THREE.Clock(), tmp = new THREE.Vector3();
+const clock = new THREE.Clock(), tmp = new THREE.Vector3(), shift = new THREE.Vector3();
 const ease = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 function frame_() {
   const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+
+  if (porchR) {
+    drawSnow(t, dt);
+    porchDogs.forEach(p => { p.children[0].position.y = Math.abs(Math.sin(t * 1.4 + p.userData.seed)) * 0.006; });
+    porchR.render(porchScene, porchCam);
+  }
 
   if (!reduceMotion) {
     const p = snowGeo.attributes.position.array;
@@ -593,16 +784,39 @@ function frame_() {
     flickers.forEach(f => {
       const n = Math.sin(t * 9 + f.seed) * 0.5 + Math.sin(t * 23 + f.seed * 2) * 0.3 + Math.sin(t * 3.1 + f.seed) * 0.2;
       if (f.l) f.l.intensity = f.base * (1 + n * (f.soft ? 0.03 : 0.12));
-      if (f.fl) f.fl.scale.set(1 - n * 0.08, 2 + n * 0.25, 1 - n * 0.08);
+      if (f.fl) {
+        const lean = f.cake ? blow.level : 0;
+        f.fl.scale.set(1 - n * 0.08, (2 + n * 0.25) * (1 - lean * 0.55), 1 - n * 0.08);
+        f.fl.rotation.z = lean * 0.6;
+      }
     });
-    dogPivot.position.y = 0.02 + Math.abs(Math.sin(t * 1.6)) * 0.008;
-    dogPivot.rotation.y = 1.35 + Math.sin(t * 0.5) * 0.15;
     curtains.forEach((c, i) => { c.rotation.y = Math.sin(t * 0.6 + i) * 0.02; });
   }
+
+  // the dog walks its path, then turns three-quarters toward the camera
+  let walking = false;
+  if (dogState.path.length) {
+    const [tx, tz] = dogState.path[0], dx = tx - dogState.x, dz = tz - dogState.z, d = Math.hypot(dx, dz), step = 1.1 * dt;
+    walking = true;
+    dogState.heading = angleLerp(dogState.heading, Math.atan2(dx, dz), Math.min(1, dt * 8));
+    if (d <= step) {
+      dogState.x = tx; dogState.z = tz; dogState.path.shift();
+      if (!dogState.path.length && dogState.onArrive) { const f = dogState.onArrive; dogState.onArrive = null; f(); }
+    } else { dogState.x += dx / d * step; dogState.z += dz / d * step; }
+  } else {
+    const face = Math.atan2(camera.position.x - dogState.x, camera.position.z - dogState.z) + 0.8;
+    dogState.heading = angleLerp(dogState.heading, face + Math.sin(t * 0.5) * 0.1, Math.min(1, dt * 2));
+  }
+  const bob = walking ? Math.abs(Math.sin(t * 10)) * 0.022 : Math.abs(Math.sin(t * 1.6)) * 0.007;
+  dogPivot.position.set(dogState.x, 0.02 + bob, dogState.z);
+  dogPivot.rotation.y = dogState.heading;
+
   sparkles.forEach(s => {
+    s.sp.visible = sparklesOn;
+    if (!sparklesOn) return;
     if (!s.anchor || s.group === dogPivot) { const b = new THREE.Box3().setFromObject(s.group); s.anchor = new THREE.Vector3((b.min.x + b.max.x) / 2, b.max.y, (b.min.z + b.max.z) / 2); }
     s.sp.position.set(s.anchor.x, s.anchor.y + s.dy + Math.sin(t * 2 + s.seed) * 0.02, s.anchor.z);
-    const k = 0.11 + (Math.sin(t * 3 + s.seed) * 0.5 + 0.5) * 0.06; s.sp.scale.setScalar(k);
+    s.sp.scale.setScalar(0.11 + (Math.sin(t * 3 + s.seed) * 0.5 + 0.5) * 0.06);
     s.sp.material.rotation = t * 0.4 + s.seed;
   });
 
@@ -612,14 +826,20 @@ function frame_() {
     if (k >= 1) tween = null;
   }
   controls.update();
+  // keep panning inside the room
+  const tg = controls.target;
+  shift.set(THREE.MathUtils.clamp(tg.x, -0.2, W + 0.2) - tg.x, THREE.MathUtils.clamp(tg.y, 0, H) - tg.y, THREE.MathUtils.clamp(tg.z, -0.1, D + 0.3) - tg.z);
+  if (shift.lengthSq() > 0) { tg.add(shift); camera.position.add(shift); }
 
   if (bubbleOn) {
-    tmp.set(dogPivot.position.x, 0.92, dogPivot.position.z).project(camera);
-    bubble.style.left = (tmp.x * 0.5 + 0.5) * innerWidth + 'px';
-    bubble.style.top = (-tmp.y * 0.5 + 0.5) * innerHeight + 'px';
+    tmp.set(dogPivot.position.x, 0.95, dogPivot.position.z).project(camera);
+    const onScreen = Math.abs(tmp.x) < 0.95 && tmp.y < 0.9 && tmp.y > -0.6 && tmp.z < 1;
+    bubble.classList.toggle('floating', !onScreen);
+    bubble.style.left = (onScreen ? THREE.MathUtils.clamp((tmp.x * 0.5 + 0.5) * innerWidth, 150, innerWidth - 150) : innerWidth / 2) + 'px';
+    bubble.style.top = (onScreen ? Math.max(90, (-tmp.y * 0.5 + 0.5) * innerHeight) : 110) + 'px';
   }
-  renderer.render(scene, camera);
+  if (roomVisible) renderer.render(scene, camera);
   requestAnimationFrame(frame_);
 }
 requestAnimationFrame(frame_);
-window.__room = { camera, controls, scene, focusOn, hotspots, goHome };
+window.__room = { camera, controls, scene, focusOn, hotspots, goHome, runStep, blowOut, tour, enter: () => document.getElementById('door').click() };
