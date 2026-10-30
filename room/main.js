@@ -624,6 +624,8 @@ renderer.domElement.addEventListener('pointermove', e => {
   else tip.classList.remove('on');
 });
 addEventListener('keydown', e => { if (e.key === 'Escape' && !tour.active) goHome(); });
+// back to the whole-room view; during the tour keep the current step's card open
+document.getElementById('zoomOut').addEventListener('click', () => (tour.active ? flyHome() : goHome()));
 
 /* ---------- blowing out the candles ---------- */
 const blow = { level: 0, done: false };

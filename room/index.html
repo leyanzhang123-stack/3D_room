@@ -170,6 +170,14 @@
   #meter { height: 6px; border-radius: 6px; background: #EADBD2; margin-top: 12px; overflow: hidden; }
   #meter i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 6px; transition: width .08s; }
 
+  #zoomOut {
+    position: fixed; z-index: 12; top: max(14px, env(safe-area-inset-top, 0px)); right: max(14px, env(safe-area-inset-right, 0px));
+    display: flex; align-items: center; gap: 6px; padding: 9px 14px 9px 11px; border: 0; border-radius: 999px; cursor: pointer;
+    background: rgba(251, 246, 239, .92); color: var(--accent); font: 600 14px/1 "Iowan Old Style", Georgia, serif;
+    box-shadow: 0 6px 18px -8px rgba(59, 38, 32, .5);
+  }
+  #zoomOut svg { width: 18px; height: 18px; }
+  #zoomOut:focus-visible { outline: 3px solid #E3B9B0; outline-offset: 2px; }
   #credit {
     position: fixed; right: max(10px, env(safe-area-inset-right, 0px)); bottom: max(6px, env(safe-area-inset-bottom, 0px));
     font-size: 10px; color: rgba(59, 38, 32, .55); z-index: 4;
@@ -227,6 +235,10 @@
     <p class="hint">Tap the door</p>
   </section>
 
+  <button id="zoomOut" type="button" aria-label="Zoom out to see the whole room">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M7.5 10.5h6M15.5 15.5 20 20"/></svg>
+    Zoom out
+  </button>
   <div id="tip"></div>
   <div id="bubble" class="hidden"></div>
   <div id="card" role="dialog" aria-live="polite">
