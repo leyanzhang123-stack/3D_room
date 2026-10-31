@@ -192,6 +192,15 @@
     box-shadow: 0 6px 18px -8px rgba(59, 38, 32, .5);
   }
   #zoomOut svg { width: 18px; height: 18px; }
+  #sound {
+    position: fixed; z-index: 12; top: max(14px, env(safe-area-inset-top, 0px)); right: calc(max(14px, env(safe-area-inset-right, 0px)) + 122px);
+    width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 50%; cursor: pointer;
+    background: rgba(251, 246, 239, .92); color: var(--accent); box-shadow: 0 6px 18px -8px rgba(59, 38, 32, .5);
+  }
+  #sound svg { width: 20px; height: 20px; }
+  #sound .off, #sound[aria-pressed="true"] .on { display: none; }
+  #sound[aria-pressed="true"] .off { display: block; }
+  #sound:focus-visible { outline: 3px solid #E3B9B0; outline-offset: 2px; }
   #zoomOut:focus-visible { outline: 3px solid #E3B9B0; outline-offset: 2px; }
   #album { position: fixed; inset: 0; z-index: 25; display: flex; flex-direction: column; background: rgba(36, 20, 15, .94); color: var(--paper); }
   #album[hidden] { display: none; }
@@ -272,6 +281,10 @@
     <p class="hint">Tap the door</p>
   </section>
 
+  <button id="sound" type="button" aria-pressed="false" aria-label="Turn the music off">
+    <svg class="on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>
+    <svg class="off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/></svg>
+  </button>
   <button id="zoomOut" type="button" aria-label="Zoom out to see the whole room">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M7.5 10.5h6M15.5 15.5 20 20"/></svg>
     Zoom out

@@ -595,9 +595,11 @@ function refreshMedia() { refreshers.forEach(f => f()); }
 function node(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
 
 function playSong(t, source) {
-  stopVideo();
+  resumeAfterClip = false; stopVideo();
   if (media.track !== t) { audio.src = `./assets/music/${t.id}.mp3`; media.track = t; }
   media.source = source;
+  audio.loop = source === 'bg'; // THIS IS FOR loops quietly behind everything until she picks something else
+  audio.volume = source === 'bg' ? 0.6 : 1;
   audio.play().catch(() => {});
   if (source === 'vinyl') { labelMat.map = coverTex(t.cover); labelMat.color.set('#ffffff'); labelMat.needsUpdate = true; }
   refreshMedia();
@@ -640,12 +642,17 @@ function screenOn(on) {
   m.color.copy(on ? new THREE.Color('#ffffff') : tvIdle.color); m.emissive.copy(on ? new THREE.Color('#ffffff') : tvIdle.emissive);
   m.emissiveIntensity = on ? 0.85 : tvIdle.ei; m.needsUpdate = true;
 }
+let resumeAfterClip = false;
 function playClip(c) {
-  audio.pause();
+  if (!audio.paused) { resumeAfterClip = true; audio.pause(); }
   if (clipOn !== c) { video.src = `./assets/video/${c.id}.mp4`; clipOn = c; }
   video.play().catch(() => {}); screenOn(true); refreshMedia();
 }
-function stopVideo() { if (!clipOn) return; video.pause(); clipOn = null; screenOn(false); refreshMedia(); }
+function stopVideo() {
+  if (!clipOn) return; video.pause(); clipOn = null; screenOn(false);
+  if (resumeAfterClip) { resumeAfterClip = false; audio.play().catch(() => {}); }
+  refreshMedia();
+}
 video.addEventListener('play', () => refreshMedia());
 video.addEventListener('pause', () => refreshMedia());
 video.addEventListener('ended', () => refreshMedia());
@@ -825,12 +832,19 @@ renderer.domElement.addEventListener('pointermove', e => {
 addEventListener('keydown', e => { if (e.key === 'Escape' && !tour.active) goHome(); });
 // back to the whole-room view; during the tour keep the current step's card open
 document.getElementById('zoomOut').addEventListener('click', () => (tour.active ? flyHome() : goHome()));
+const soundBtn = document.getElementById('sound');
+soundBtn.addEventListener('click', () => {
+  audio.muted = !audio.muted;
+  soundBtn.setAttribute('aria-pressed', String(audio.muted));
+  soundBtn.setAttribute('aria-label', audio.muted ? 'Turn the music on' : 'Turn the music off');
+});
 
 /* ---------- blowing out the candles ---------- */
 const blow = { level: 0, done: false };
 async function listenForBlow() {
   showCard('Make a wish', 'Listening… blow into your phone.', [{ label: 'Tap to blow instead', fn: blowOut }]);
   meter.hidden = false;
+  if (!audio.paused) { blow.resume = true; audio.pause(); }
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
     const AC = window.AudioContext || window.webkitAudioContext, ac = new AC(), an = ac.createAnalyser();
@@ -848,12 +862,14 @@ async function listenForBlow() {
     };
     tick();
   } catch (err) {
+    if (blow.resume) { blow.resume = false; audio.play().catch(() => {}); }
     showCard('Make a wish', "The microphone isn't available here, so tap instead.", [{ label: 'Tap to blow', primary: true, fn: blowOut }]);
   }
 }
 function blowOut() {
   if (blow.done) return;
   blow.done = true; blow.level = 0;
+  if (blow.resume) { blow.resume = false; setTimeout(() => audio.play().catch(() => {}), 600); }
   cakeFlames.forEach(f => { f.visible = false; });
   cakeLight.base = 0.15;
   say('Happy birthday, Aida! Your wish is safe with me.');
@@ -948,6 +964,7 @@ function drawSnow(t, dt) {
 let entering = false, roomVisible = false;
 document.getElementById('door').addEventListener('click', () => {
   if (entering) return; entering = true; roomVisible = true;
+  playSong(TWICE_SONG, 'bg');
   const stage = document.getElementById('stage'), r = document.getElementById('door').getBoundingClientRect();
   stage.style.transformOrigin = `${r.left + r.width / 2}px ${r.top + r.height * 0.55}px`;
   porch.classList.add('opening');
@@ -1051,4 +1068,4 @@ function frame_() {
   requestAnimationFrame(frame_);
 }
 requestAnimationFrame(frame_);
-window.__room = { playSong, SONGS, playClip, CLIPS, camera, controls, scene, focusOn, hotspots, goHome, runStep, blowOut, tour, enter: () => document.getElementById('door').click() };
+window.__room = { audio, video, playSong, SONGS, playClip, CLIPS, camera, controls, scene, focusOn, hotspots, goHome, runStep, blowOut, tour, enter: () => document.getElementById('door').click() };
