@@ -86,6 +86,13 @@ function put(obj, x, y, z, parent = scene) {
 }
 function at(obj, x, y, z, parent = scene) { obj.position.set(x, y, z); parent.add(obj); return obj; }
 
+const texLoader = new THREE.TextureLoader();
+function loadTex(url) {
+  const t = texLoader.load(url);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
 function canvasTex(w, h, draw) {
   const c = document.createElement('canvas'); c.width = w; c.height = h;
   draw(c.getContext('2d'), w, h);
@@ -260,11 +267,12 @@ at(cyl(0.3, 0.3, 0.035, mat(COL.cherry, { roughness: 0.55 }), 40), barX, 1.03, b
 const player = new THREE.Group(); at(player, barX, 1.048, barZ, bar);
 put(rbox(0.38, 0.075, 0.3, mat('#EADFD1'), 0.015), 0, 0, 0, player);
 const platter = at(cyl(0.125, 0.125, 0.012, mat('#141213', { roughness: 0.35 }), 40), -0.04, 0.081, 0, player);
-at(cyl(0.04, 0.04, 0.002, mat('#8A1F26'), 24), 0, 0.007, 0, platter);
+const labelMat = mat('#8A1F26', { roughness: 0.6 });
+at(cyl(0.04, 0.04, 0.002, [mat('#8A1F26'), labelMat, mat('#8A1F26')], 24), 0, 0.007, 0, platter);
 const arm = new THREE.Group(); at(arm, 0.13, 0.09, -0.1, player);
 at(cyl(0.012, 0.014, 0.02, mat('#cfc6bb', { metalness: 0.7, roughness: 0.3 })), 0, 0, 0, arm);
 at(rbox(0.006, 0.006, 0.2, mat('#cfc6bb', { metalness: 0.7, roughness: 0.3 }), 0.002), -0.03, 0.012, 0.09, arm).rotation.y = 0.35;
-hotspot(bar, 'music', 'Record player', 'Pick a song. The playlist goes here.', { dist: 1.3, dir: [0.35, 0.7, 1], aim: player });
+hotspot(bar, 'music', 'Record player', '', { dist: 1.3, dir: [0.35, 0.7, 1], aim: player });
 
 /* ---------- tall cherry cabinet with a light washing down ---------- */
 const cab = new THREE.Group(); scene.add(cab);
@@ -370,15 +378,10 @@ candle(DX + 0.12, DH, 0.5, 0.08, 0.028, 0.45);
   const back = rbox(0.44, 0.48, 0.06, bm, 0.03); back.position.set(0, 0.77, 0.22); back.rotation.x = 0.08; ch.add(back);
   ch.position.set(DX + 0.48, 0, 0.98); ch.rotation.y = 0.35; scene.add(ch); }
 
-// Mina poster frame (placeholder art)
-const posterTex = canvasTex(400, 560, (g, w, h) => {
-  const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#F3E1DC'); gr.addColorStop(1, '#E3B9B0');
-  g.fillStyle = gr; g.fillRect(0, 0, w, h); g.fillStyle = '#6B1E24'; g.font = '600 64px Georgia'; g.textAlign = 'center'; g.fillText('MINA', w / 2, h / 2);
-  g.font = 'italic 24px Georgia'; g.fillText('poster goes here', w / 2, h / 2 + 44);
-});
-{ const p = new THREE.Group(); put(rbox(0.5, 0.68, 0.025, mat(COL.walnut, { roughness: 0.5 }), 0.008), 0, 0, 0, p);
-  at(new THREE.Mesh(new THREE.PlaneGeometry(0.44, 0.62), mat('#fff', { map: posterTex, roughness: 0.6 })), 0, 0.34, 0.014, p);
-  p.position.set(DX + DW / 2, 1.38, 0.0125); scene.add(p); }
+// Mina poster: TWICE "What is Love?" in a square walnut frame
+{ const p = new THREE.Group(); put(rbox(0.6, 0.6, 0.025, mat(COL.walnut, { roughness: 0.5 }), 0.008), 0, 0, 0, p);
+  at(new THREE.Mesh(new THREE.PlaneGeometry(0.54, 0.54), mat('#fff', { map: loadTex('./assets/mina-poster.jpg'), roughness: 0.6 })), 0, 0.3, 0.014, p);
+  p.position.set(DX + DW / 2, 1.42, 0.0125); scene.add(p); }
 
 // built-in IKEA-style wardrobe in the back-right corner
 { const wd = new THREE.Group(), wm = mat(COL.ikea, { roughness: 0.6 }), ww = W - (DX + DW) - 0.06;
@@ -400,23 +403,21 @@ put(rbox(0.42, 0.04, BW + 0.08, mat('#EADBC9', { roughness: 1 }), 0.02), BL - 0.
 const pillow = (c, z, ry) => { const p = rbox(0.34, 0.15, 0.62, mat(c, { roughness: 1 }), 0.07); p.rotation.set(0, ry, 0.25); put(p, 0.3, 0.46, z, bed); };
 pillow('#F1E6D8', BZ + 0.42, 0.05); pillow(COL.blush, BZ + BW - 0.42, -0.06);
 // Twice album on the bed
-const albumTex = canvasTex(256, 256, (g, w, h) => {
-  const gr = g.createLinearGradient(0, 0, w, h); gr.addColorStop(0, '#F7C9D1'); gr.addColorStop(1, '#F2A7B6');
-  g.fillStyle = gr; g.fillRect(0, 0, w, h); g.fillStyle = '#FFFFFF'; g.font = '700 46px Georgia'; g.textAlign = 'center'; g.fillText('TWICE', w / 2, h / 2 + 16);
-});
 const album = new THREE.Group(); scene.add(album);
-{ const a = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.022, 0.3), [mat('#F2A7B6'), mat('#F2A7B6'), mat('#fff', { map: albumTex }), mat('#F2A7B6'), mat('#F2A7B6'), mat('#F2A7B6')]);
+{ const a = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.022, 0.3), [mat('#F2A7B6'), mat('#F2A7B6'), mat('#fff', { map: loadTex('./assets/covers/this-is-for.jpg') }), mat('#F2A7B6'), mat('#F2A7B6'), mat('#F2A7B6')]);
   a.castShadow = true; album.add(a); album.rotation.y = 0.3; album.position.set(1.08, 0.545, BZ + 0.62); }
-hotspot(album, 'twice', 'TWICE', 'Plays a TWICE song.', { dist: 1.3, dir: [0.3, 0.9, 0.8] });
+hotspot(album, 'twice', 'THIS IS FOR', '', { dist: 1.3, dir: [0.3, 0.9, 0.8] });
 // surprise box
-const gift = new THREE.Group(); scene.add(gift);
+const gift = new THREE.Group(), giftLid = new THREE.Group(); scene.add(gift);
 { const gm = mat('#7E1F24', { roughness: 0.55 }), rm = mat('#F1E6D8', { roughness: 0.5 });
   put(rbox(0.3, 0.22, 0.28, gm, 0.012), 0, 0, 0, gift);
-  put(rbox(0.32, 0.04, 0.3, gm, 0.012), 0, 0.21, 0, gift);
-  put(rbox(0.05, 0.255, 0.305, rm, 0.006), 0, 0, 0, gift); put(rbox(0.325, 0.255, 0.05, rm, 0.006), 0, 0, 0, gift);
-  [-1, 1].forEach(s => { const t = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.014, 8, 20), rm); t.position.set(s * 0.04, 0.29, 0); t.rotation.set(0, 0, s * 0.6); t.scale.set(1, 0.7, 0.6); t.castShadow = true; gift.add(t); });
+  put(rbox(0.05, 0.215, 0.285, rm, 0.006), 0, 0, 0, gift); put(rbox(0.305, 0.215, 0.05, rm, 0.006), 0, 0, 0, gift);
+  giftLid.position.y = 0.21; gift.add(giftLid);
+  put(rbox(0.32, 0.04, 0.3, gm, 0.012), 0, 0, 0, giftLid);
+  put(rbox(0.05, 0.045, 0.305, rm, 0.006), 0, 0, 0, giftLid); put(rbox(0.325, 0.045, 0.05, rm, 0.006), 0, 0, 0, giftLid);
+  [-1, 1].forEach(s => { const t = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.014, 8, 20), rm); t.position.set(s * 0.04, 0.08, 0); t.rotation.set(0, 0, s * 0.6); t.scale.set(1, 0.7, 0.6); t.castShadow = true; giftLid.add(t); });
   gift.rotation.y = -0.25; gift.position.set(1.5, 0.535, BZ + 1.12); }
-hotspot(gift, 'gift', 'A surprise', 'Open me…', { dist: 1.3, dir: [0.3, 0.8, 0.9] });
+hotspot(gift, 'gift', 'A surprise', '', { dist: 1.3, dir: [0.3, 0.8, 0.9] });
 
 // nightstand, front-left, with a bedside lamp and the snack corner
 const NZ = BZ + BW + 0.12;
@@ -500,7 +501,7 @@ const tv = new THREE.Group(); scene.add(tv);
   [-0.4, 0.4].forEach(a => { const r = cyl(0.004, 0.004, 0.38, mat('#2a2220', { metalness: 0.5 }), 6); r.position.set(Math.sin(a) * 0.15, 0.98, 0); r.rotation.z = -a; tv.add(r); });
   at(sphere(0.03, tm, 12), 0, 0.84, 0, tv);
   tv.position.set(4.62, 0, 2.95); tv.rotation.y = -0.55; }
-hotspot(tv, 'tv', 'Movie night', 'Her favourite film clips will play here.', { dist: 1.9, dir: [-0.2, 0.25, 1], local: true });
+hotspot(tv, 'tv', 'Movie night', '', { dist: 1.9, dir: [-0.2, 0.25, 1], local: true });
 
 /* ---------- the guide dog ---------- */
 const DOG_HOME = [3.45, 3.2];
@@ -558,9 +559,11 @@ hotspots.filter(h => !h.userData.hotspot.view.viewOnly).forEach(h => sparkleAbov
 const tip = document.getElementById('tip'), bubble = document.getElementById('bubble');
 const card = document.getElementById('card'), cardTitle = document.getElementById('cardTitle'), cardText = document.getElementById('cardText');
 const cardActions = document.getElementById('cardActions'), meter = document.getElementById('meter');
-function showCard(title, text, actions = []) {
+const cardBody = document.getElementById('cardBody');
+function setBody(node) { cardBody.innerHTML = ''; if (node) cardBody.append(node); cardBody.hidden = !node; refreshMedia(); }
+function showCard(title, text, actions = [], body = null) {
   cardTitle.textContent = title; cardText.textContent = text || ''; cardText.hidden = !text;
-  meter.hidden = true; cardActions.innerHTML = '';
+  meter.hidden = true; cardActions.innerHTML = ''; setBody(body);
   actions.forEach(a => { const b = document.createElement('button'); b.type = 'button'; b.textContent = a.label; if (a.primary) b.className = 'primary'; b.addEventListener('click', a.fn); cardActions.append(b); });
   card.classList.add('open');
 }
@@ -568,6 +571,111 @@ const hideCard = () => card.classList.remove('open');
 let bubbleOn = false;
 function say(text) { bubble.textContent = text; bubble.classList.remove('hidden'); bubbleOn = true; }
 function hush() { bubble.classList.add('hidden'); bubbleOn = false; }
+
+/* ---------- music, movies and the surprise box ---------- */
+const SONGS = [
+  { id: 'million-dollar-man', title: 'Million Dollar Man', artist: 'Lana Del Rey', cover: 'born-to-die' },
+  { id: 'happiness-is-a-butterfly', title: 'Happiness is a butterfly', artist: 'Lana Del Rey', cover: 'happiness-is-a-butterfly' },
+  { id: 'le-temps-de-lamour', title: "Le temps de l'amour", artist: 'Françoise Hardy', cover: 'le-temps-de-lamour' },
+  { id: 'message-personnel', title: 'Message personnel', artist: 'Françoise Hardy', cover: 'message-personnel' },
+];
+const TWICE_SONG = { id: 'this-is-for', title: 'THIS IS FOR', artist: 'TWICE', cover: 'this-is-for' };
+const CLIPS = [
+  { id: 'matilda', title: 'Matilda', note: 'Everyone born…' },
+  { id: 'charlie', title: 'Charlie and the Chocolate Factory', note: 'The last golden ticket' },
+];
+const ARM_PLAY = 0.5;
+
+const audio = new Audio(); audio.preload = 'none';
+const media = { track: null, source: null };
+const covers = {};
+const coverTex = (id) => covers[id] || (covers[id] = loadTex(`./assets/covers/${id}.jpg`));
+let refreshers = [];
+function refreshMedia() { refreshers.forEach(f => f()); }
+function node(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text) e.textContent = text; return e; }
+
+function playSong(t, source) {
+  stopVideo();
+  if (media.track !== t) { audio.src = `./assets/music/${t.id}.mp3`; media.track = t; }
+  media.source = source;
+  audio.play().catch(() => {});
+  if (source === 'vinyl') { labelMat.map = coverTex(t.cover); labelMat.color.set('#ffffff'); labelMat.needsUpdate = true; }
+  refreshMedia();
+}
+const pauseSong = () => audio.pause();
+audio.addEventListener('play', () => refreshMedia());
+audio.addEventListener('pause', () => refreshMedia());
+audio.addEventListener('ended', () => {
+  if (media.source === 'vinyl') playSong(SONGS[(SONGS.indexOf(media.track) + 1) % SONGS.length], 'vinyl');
+  else refreshMedia();
+});
+
+function row(img, title, sub, isOn, isPlaying, onTap) {
+  const b = node('button', 'track'); b.type = 'button';
+  const pic = node('img'); pic.src = img; pic.alt = '';
+  const meta = node('span', 'meta'); meta.append(node('b', '', title), node('small', '', sub));
+  const st = node('span', 'state');
+  b.append(pic, meta, st);
+  b.addEventListener('click', onTap);
+  refreshers.push(() => { b.classList.toggle('on', isOn()); st.textContent = isPlaying() ? 'Pause' : 'Play'; });
+  return b;
+}
+function songRow(t, source) {
+  return row(`./assets/covers/${t.cover}.jpg`, t.title, t.artist,
+    () => media.track === t, () => media.track === t && !audio.paused,
+    () => (media.track === t && !audio.paused ? pauseSong() : playSong(t, source)));
+}
+function list(items) { const d = node('div', 'list'); items.forEach(i => d.append(i)); return d; }
+
+// the TV plays the clip onto its screen, cropped from 16:9 to the set's squarer tube
+const video = document.createElement('video');
+video.playsInline = true; video.setAttribute('playsinline', ''); video.setAttribute('webkit-playsinline', ''); video.preload = 'none';
+const videoTex = new THREE.VideoTexture(video); videoTex.colorSpace = THREE.SRGBColorSpace;
+videoTex.repeat.set((0.44 / 0.36) / (16 / 9), 1); videoTex.offset.set((1 - videoTex.repeat.x) / 2, 0);
+const tvScreen = tv.userData.screen, tvIdle = { color: tvScreen.material.color.clone(), emissive: tvScreen.material.emissive.clone(), ei: tvScreen.material.emissiveIntensity };
+let clipOn = null;
+function screenOn(on) {
+  const m = tvScreen.material;
+  m.map = on ? videoTex : null; m.emissiveMap = on ? videoTex : null;
+  m.color.copy(on ? new THREE.Color('#ffffff') : tvIdle.color); m.emissive.copy(on ? new THREE.Color('#ffffff') : tvIdle.emissive);
+  m.emissiveIntensity = on ? 0.85 : tvIdle.ei; m.needsUpdate = true;
+}
+function playClip(c) {
+  audio.pause();
+  if (clipOn !== c) { video.src = `./assets/video/${c.id}.mp4`; clipOn = c; }
+  video.play().catch(() => {}); screenOn(true); refreshMedia();
+}
+function stopVideo() { if (!clipOn) return; video.pause(); clipOn = null; screenOn(false); refreshMedia(); }
+video.addEventListener('play', () => refreshMedia());
+video.addEventListener('pause', () => refreshMedia());
+video.addEventListener('ended', () => refreshMedia());
+function clipRow(c) {
+  return row(`./assets/video/${c.id}.jpg`, c.title, c.note,
+    () => clipOn === c, () => clipOn === c && !video.paused && !video.ended,
+    () => (clipOn === c && !video.paused && !video.ended ? video.pause() : playClip(c)));
+}
+
+let giftOpen = false;
+function ryanGallery() {
+  const wrap = node('div');
+  const g = node('div', 'gallery');
+  [1, 2, 3, 4].forEach(n => { const im = node('img'); im.src = `./assets/ryan/ryan-${n}.jpg`; im.alt = 'Ryan Gosling'; im.loading = 'lazy'; g.append(im); });
+  wrap.append(g, node('p', 'swipe-hint', 'Swipe →'));
+  return wrap;
+}
+
+// extra content for each tappable thing, used both in the tour and when exploring
+const EXTRAS = {
+  music: () => { refreshers = []; return { body: list(SONGS.map(t => songRow(t, 'vinyl'))) }; },
+  twice: () => { refreshers = []; const body = list([songRow(TWICE_SONG, 'twice')]); playSong(TWICE_SONG, 'twice'); return { body }; },
+  gift: () => { refreshers = []; giftOpen = true; return { body: ryanGallery() }; },
+  tv: () => { refreshers = []; return { body: list(CLIPS.map(clipRow)) }; },
+  bed: () => {
+    refreshers = [];
+    return { body: list([songRow(TWICE_SONG, 'twice')]),
+      actions: [{ label: 'Open the box', fn: () => { giftOpen = true; setBody(ryanGallery()); } }] };
+  },
+};
 
 /* ---------- camera moves ---------- */
 let tween = null;
@@ -584,10 +692,12 @@ const flyHome = () => flyTo(HOME_TARGET.clone().addScaledVector(HOME_DIR, homeDi
 function focusOn(g) {
   const h = g.userData.hotspot;
   frameView(g, h.view);
-  showCard(h.title, h.text, [{ label: 'Back to the room', primary: true, fn: goHome }]);
+  stopVideo();
+  const ex = EXTRAS[h.id] ? EXTRAS[h.id]() : {};
+  showCard(h.title, h.text, [...(ex.actions || []), { label: 'Back to the room', primary: !ex.actions, fn: goHome }], ex.body);
   tip.classList.remove('on');
 }
-function goHome() { flyHome(); hideCard(); }
+function goHome() { flyHome(); hideCard(); stopVideo(); }
 
 /* ---------- tapping, double-tapping, hovering ---------- */
 const ray = new THREE.Raycaster(), ptr = new THREE.Vector2();
@@ -669,7 +779,7 @@ const TOUR = [
   { dog: [2.4, 1.05], obj: bar, title: 'The record player', line: 'Pick a song. Any song.' },
   { dog: [3.3, 1.4], obj: frame, view: { dist: 1.5, dir: [0.15, 0.55, 1] }, title: 'Your desk', line: 'Your books, your snowdrops, and a photo of you two.' },
   { dog: [3.95, 2.3], obj: tv, title: 'Movie night', line: 'Your favourite scenes, ready whenever you are.' },
-  { dog: [2.45, 1.95], obj: gift, view: { dist: 1.7, dir: [0.35, 0.85, 0.9] }, title: 'Something on the bed', line: 'A TWICE album, and a mysterious box. Open the box. Trust me.' },
+  { dog: [2.45, 1.95], obj: gift, extra: 'bed', view: { dist: 1.7, dir: [0.35, 0.85, 0.9] }, title: 'Something on the bed', line: 'A TWICE album, and a mysterious box. Open the box. Trust me.' },
   { dog: [1.1, 3.25], obj: snackSpot, title: 'The snack corner', line: 'Want Want, beef jerky, mămăligă. Everything you like.' },
   { dog: [2.45, 1.0], obj: cab, title: 'Little things from everywhere', line: 'A snow globe, a music box, Paris and Québec. Look closely.' },
   { dog: DOG_HOME, home: true, title: "That's the tour!", line: 'The room is yours now. Tap anything that sparkles, drag to look around, double-tap to get closer.', next: 'Explore on my own' },
@@ -681,7 +791,9 @@ function runStep(i) {
   hush(); hideCard();
   walkDog(st.dog, () => say(st.line));
   if (st.home) flyHome(); else frameView(st.obj, st.view || st.obj.userData.hotspot.view);
-  const acts = [];
+  stopVideo();
+  const exId = st.extra || st.obj?.userData.hotspot?.id, ex = EXTRAS[exId] ? EXTRAS[exId]() : {};
+  const acts = [...(ex.actions || [])];
   if (st.blow && !blow.done) {
     acts.push({ label: 'Blow with my mic', primary: true, fn: listenForBlow }, { label: 'Tap to blow', fn: blowOut });
   } else {
@@ -689,7 +801,7 @@ function runStep(i) {
     acts.push({ label: st.next || 'Next', primary: true, fn: () => (i < TOUR.length - 1 ? runStep(i + 1) : endTour()) });
   }
   if (i === 0 && toured) acts.push({ label: 'Skip the tour', fn: endTour });
-  setTimeout(() => showCard(st.title, '', acts), 700);
+  setTimeout(() => showCard(st.title, '', acts, ex.body), 700);
 }
 function endTour() {
   tour.active = false; sparklesOn = true; hideCard();
@@ -795,6 +907,12 @@ function frame_() {
     curtains.forEach((c, i) => { c.rotation.y = Math.sin(t * 0.6 + i) * 0.02; });
   }
 
+  const spinning = media.source === 'vinyl' && media.track && !audio.paused;
+  if (spinning) platter.rotation.y -= dt * 3.4;
+  arm.rotation.y += ((spinning ? ARM_PLAY : 0) - arm.rotation.y) * Math.min(1, dt * 3);
+  giftLid.position.y += ((giftOpen ? 0.42 : 0.21) - giftLid.position.y) * Math.min(1, dt * 4);
+  giftLid.rotation.z += ((giftOpen ? 0.55 : 0) - giftLid.rotation.z) * Math.min(1, dt * 4);
+
   // the dog walks its path, then turns three-quarters toward the camera
   let walking = false;
   if (dogState.path.length) {
@@ -838,10 +956,10 @@ function frame_() {
     const onScreen = Math.abs(tmp.x) < 0.95 && tmp.y < 0.9 && tmp.y > -0.6 && tmp.z < 1;
     bubble.classList.toggle('floating', !onScreen);
     bubble.style.left = (onScreen ? THREE.MathUtils.clamp((tmp.x * 0.5 + 0.5) * innerWidth, 150, innerWidth - 150) : innerWidth / 2) + 'px';
-    bubble.style.top = (onScreen ? Math.max(90, (-tmp.y * 0.5 + 0.5) * innerHeight) : 110) + 'px';
+    bubble.style.top = (onScreen ? Math.max(135, (-tmp.y * 0.5 + 0.5) * innerHeight) : 140) + 'px';
   }
   if (roomVisible) renderer.render(scene, camera);
   requestAnimationFrame(frame_);
 }
 requestAnimationFrame(frame_);
-window.__room = { camera, controls, scene, focusOn, hotspots, goHome, runStep, blowOut, tour, enter: () => document.getElementById('door').click() };
+window.__room = { playSong, SONGS, playClip, CLIPS, camera, controls, scene, focusOn, hotspots, goHome, runStep, blowOut, tour, enter: () => document.getElementById('door').click() };

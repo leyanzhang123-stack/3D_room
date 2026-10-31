@@ -160,6 +160,21 @@
   #card.open { transform: translate(-50%, 0); }
   #card h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
   #card p { margin: 0; color: #7a5d52; font-style: italic; }
+  #card { max-height: calc(100vh - 36px); overflow-y: auto; }
+  #cardBody { margin-top: 12px; }
+  .list { display: grid; gap: 8px; }
+  .track { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px; border: 0; border-radius: 14px; background: #F3E9DF; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+  .track img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; flex: none; }
+  .track .meta { display: grid; flex: 1; min-width: 0; }
+  .track .meta b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track .meta small { color: #7a5d52; font-style: italic; }
+  .track .state { flex: none; font-size: 13px; font-weight: 600; color: var(--accent); padding: 5px 10px; border-radius: 999px; border: 1.5px solid #E3CFC4; }
+  .track.on { background: #EAD6CC; }
+  .track.on .state { background: var(--accent); color: var(--paper); border-color: var(--accent); }
+  .track:focus-visible { outline: 3px solid #E3B9B0; outline-offset: 2px; }
+  .gallery { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 6px; }
+  .gallery img { height: min(42vh, 340px); width: auto; max-width: 82vw; border-radius: 12px; object-fit: cover; scroll-snap-align: center; flex: none; }
+  .swipe-hint { margin: 6px 0 0; font-size: 12px; color: #7a5d52; font-style: italic; }
   #cardActions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
   #cardActions button {
     font: inherit; font-weight: 600; color: var(--accent); background: transparent;
@@ -245,6 +260,7 @@
     <h2 id="cardTitle"></h2>
     <p id="cardText"></p>
     <div id="meter" hidden><i></i></div>
+    <div id="cardBody" hidden></div>
     <div id="cardActions"></div>
   </div>
   <div id="credit">Dog: “Bernese Mountain Dog Low Poly” by <a href="https://sketchfab.com/picklecobra" target="_blank" rel="noopener">toofball</a>, CC BY 4.0</div>
