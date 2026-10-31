@@ -234,12 +234,12 @@ const curtains = [curtain(WIN.x0 + 0.1, 0.62), curtain(WIN.x1 - 0.1, 0.62)];
 
 /* ---------- photo wall + fairy lights (back wall, left of the window) ---------- */
 const photoWall = new THREE.Group(); scene.add(photoWall);
-const tones = ['#b9877d', '#8d6f6a', '#c7a58d', '#a2867b', '#7d6460', '#d0b19a'];
+const WALL_PHOTOS = ['4039', '0783', '4447', '4898', '5161', '5565', '0f21d', '7862', '6351', '6576', '6843'];
 [[1.06, 2.0], [1.32, 2.06], [1.58, 1.98], [1.84, 2.04], [1.12, 1.68], [1.4, 1.72], [1.68, 1.66], [1.95, 1.72], [1.2, 1.38], [1.5, 1.4], [1.8, 1.36]]
   .forEach(([x, y], i) => {
     const card = new THREE.Group();
     const f = new THREE.Mesh(new THREE.BoxGeometry(0.19, 0.23, 0.006), mat('#FBF6EF')); f.castShadow = true;
-    const ph = new THREE.Mesh(new THREE.PlaneGeometry(0.155, 0.15), mat(tones[i % tones.length], { roughness: 0.5 })); ph.position.set(0, 0.025, 0.0035);
+    const ph = new THREE.Mesh(new THREE.PlaneGeometry(0.155, 0.15), mat('#ffffff', { map: loadTex(`./assets/photos/thumb/${WALL_PHOTOS[i]}.jpg`), roughness: 0.5 })); ph.position.set(0, 0.025, 0.0035);
     card.add(f, ph); card.position.set(x, y, 0.01); card.rotation.z = ((i * 37) % 9 - 4) * 0.018;
     photoWall.add(card);
   });
@@ -255,7 +255,7 @@ function fairyString(from, to, sag, n, parent, axis = 'x') {
 }
 fairyString(new THREE.Vector3(0.94, 2.32, 0.03), new THREE.Vector3(2.12, 2.32, 0.03), 0.12, 16, photoWall);
 warmLight(1.5, 2.1, 0.35, 0.35, 1.6);
-hotspot(photoWall, 'photos', 'Our photo wall', 'Your timeline and photos will live here.', { dist: 2.1, dir: [0.15, 0.08, 1] });
+hotspot(photoWall, 'photos', 'Our photo wall', '', { dist: 2.1, dir: [0.15, 0.08, 1] });
 
 /* ---------- bar-height table with the record player, under the photo wall ---------- */
 const bar = new THREE.Group(); scene.add(bar);
@@ -349,10 +349,10 @@ put(rbox(0.24, 0.02, 0.17, mat('#a8604a'), 0.005), DX + 0.5, DH, 0.45).rotation.
 // photo frame (our photo)
 const frame = new THREE.Group(); scene.add(frame);
 { put(rbox(0.17, 0.21, 0.02, mat(COL.walnut, { roughness: 0.5 }), 0.006), 0, 0, 0, frame);
-  at(new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.17), mat('#c7a58d', { roughness: 0.5 })), 0, 0.105, 0.011, frame);
+  at(new THREE.Mesh(new THREE.PlaneGeometry(0.13, 0.17), mat('#ffffff', { map: loadTex('./assets/photos/frame.jpg'), roughness: 0.5 })), 0, 0.105, 0.011, frame);
   const leg = rbox(0.03, 0.15, 0.01, mat(COL.walnut), 0.003); leg.position.set(0, 0.075, -0.04); leg.rotation.x = 0.4; frame.add(leg);
   frame.rotation.set(-0.12, -0.25, 0); frame.position.set(DX + 0.8, DH, 0.16); }
-hotspot(frame, 'frame', 'Us', 'Our photo goes here.', { dist: 1.0, dir: [0.1, 0.35, 1] });
+hotspot(frame, 'frame', 'Us', '', { dist: 1.0, dir: [0.1, 0.35, 1] });
 // small snow globe on the desk
 { const g = new THREE.Group(); put(cyl(0.035, 0.04, 0.03, mat(COL.walnut)), 0, 0, 0, g);
   at(sphere(0.045, new THREE.MeshStandardMaterial({ color: '#E6F0F7', transparent: true, opacity: 0.35, roughness: 0.05 }), 20), 0, 0.07, 0, g);
@@ -675,6 +675,95 @@ const EXTRAS = {
     return { body: list([songRow(TWICE_SONG, 'twice')]),
       actions: [{ label: 'Open the box', fn: () => { giftOpen = true; setBody(ryanGallery()); } }] };
   },
+};
+
+/* ---------- our album: every photo with the caption it came with ---------- */
+const ALBUM = [
+  [['4039'], 'Our first selfie together!!! First ylis!'],
+  [['4122'], "First school week omg we were sooo young and 'free'"],
+  [['8a1ef'], 'Solvala day~'],
+  [['4295'], 'Nasut...!'],
+  [['0783'], 'awwww WE CANT EAT THE SKIN!'],
+  [['4430'], 'your first wechat post'],
+  [['0809'], 'remember we were swinging and having alepa food during breaks'],
+  [['4447'], 'flying tiger trip'],
+  [['4503'], 'do you remember the date lmao?'],
+  [['0885'], 'the second yliiiis'],
+  [['af4ff'], 'filmography club!'],
+  [['4679'], 'our subway'],
+  [['4743'], 'the day to taco bell~~'],
+  [['4783'], 'before debate club..'],
+  [['1130'], 'third ylis!'],
+  [['4898'], 'first sleepover'],
+  [['9442'], 'aww i love this'],
+  [['5067'], 'remember we were getting lost...'],
+  [['5080'], 'debate...!'],
+  [['5161'], 'first photo shoot! love this so much!'],
+  [['5285'], '6767676767'],
+  [['1706', '1708', '1709'], 'mochi mochi'],
+  [['5565'], 'thai food! (thank u so much for supporting my piano performance)'],
+  [['6057'], 'math club!'],
+  [['6419'], 'city walkinggg'],
+  [['6642'], "i can't."],
+  [['0f21d'], 'HALLOWEEN!! we were eating!'],
+  [['7325'], 'music class which i like a lot but you...lmaooo'],
+  [['7506'], 'first day after i broke up..hmm!'],
+  [['7658'], 'itsenaisyys paiva~'],
+  [['7862'], 'Merry Christmas!'],
+  [['4035'], 'this was so fun'],
+  [['4130', '8061'], 'hotel trip xixixi'],
+  [['8787'], 'did i just came back from china?'],
+  [['0564'], 'Chinese foooood'],
+  [['6316'], 'nope this was the first time after China'],
+  [['6351'], 'We are being Japanese kawaiiii'],
+  [['0706'], 'in the school library'],
+  [['0866'], 'noidea'],
+  [['1202'], "Adya's birthday party"],
+  [['7289'], 'vapuuuu'],
+  [['2668'], "Aishwarya's birthday partyyyy"],
+  [['2742'], 'look at our bicepssss'],
+  [['4683'], 'mid summer'],
+  [['4685'], 'hahahah ur so cute'],
+  [['6576'], 'summer beach party!!! hesburger'],
+  [['6843'], 'one year anniversary!'],
+  [['7022'], 'school started...!'],
+  [['7568'], 'school mirror selfie!'],
+  [['8024'], 'nordeep!'],
+];
+// capture dates read from the photos (empty when the photo didn't carry one)
+const PHOTO_DATES = {"0706":"2026-03","0866":"2026-03","2742":"2026-05","4683":"2026-06","6316":"2026-03","6351":"2026-03","6576":"2026-07","6843":"2026-08","7022":"2026-08","7289":"2026-04","7568":"2026-09","8787":"2026-02","1130":"2025-08","4130":"2025-12","4743":"2025-08","4783":"2025-08","5080":"2025-09","5565":"2025-09","8061":"2025-12","9442":"2025-09","af4ff":"2025-08","0f21d":"2025-11","8a1ef":"2025-08","0783":"2025-08","0809":"2025-08","0885":"2025-08","4035":"2025-12","4039":"2025-08","4295":"2025-08","6419":"2025-10","7325":"2025-12","7862":"2025-12"};
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const monthOf = (keys) => { const d = keys.map(k => PHOTO_DATES[k]).find(Boolean); if (!d) return ''; const [y, m] = d.split('-'); return `${MONTHS[+m - 1]} ${y}`; };
+
+const albumEl = document.getElementById('album'), albumTrack = document.getElementById('albumTrack'), albumCount = document.getElementById('albumCount');
+ALBUM.forEach(([keys, caption], i) => {
+  const slide = node('figure', 'slide');
+  const pics = node('div', 'pics n' + keys.length);
+  keys.forEach(k => { const im = node('img'); im.src = `./assets/photos/full/${k}.jpg`; im.alt = caption; im.loading = i < 2 ? 'eager' : 'lazy'; im.decoding = 'async'; pics.append(im); });
+  const cap = node('figcaption');
+  const when = monthOf(keys); if (when) cap.append(node('small', '', when));
+  cap.append(node('span', '', caption));
+  slide.append(pics, cap); albumTrack.append(slide);
+});
+const albumIndex = () => Math.round(albumTrack.scrollLeft / albumTrack.clientWidth);
+const showCount = () => { albumCount.textContent = `${albumIndex() + 1} / ${ALBUM.length}`; };
+albumTrack.addEventListener('scroll', showCount, { passive: true });
+const albumGo = (d) => albumTrack.scrollTo({ left: (albumIndex() + d) * albumTrack.clientWidth, behavior: 'smooth' });
+document.getElementById('albumPrev').addEventListener('click', () => albumGo(-1));
+document.getElementById('albumNext').addEventListener('click', () => albumGo(1));
+document.getElementById('albumClose').addEventListener('click', () => closeAlbum());
+addEventListener('keydown', e => {
+  if (albumEl.hidden) return;
+  if (e.key === 'ArrowRight') albumGo(1); else if (e.key === 'ArrowLeft') albumGo(-1); else if (e.key === 'Escape') closeAlbum();
+});
+function openAlbum() { albumEl.hidden = false; albumTrack.scrollLeft = 0; showCount(); document.getElementById('albumClose').focus(); }
+function closeAlbum() { albumEl.hidden = true; }
+EXTRAS.photos = () => { refreshers = []; return { actions: [{ label: 'Open our album', primary: true, fn: openAlbum }] }; };
+EXTRAS.frame = () => {
+  refreshers = [];
+  const f = node('figure', 'deskphoto'); const im = node('img'); im.src = './assets/photos/full/4039.jpg'; im.alt = 'Our first selfie together';
+  f.append(im, node('figcaption', '', 'Our first selfie together!!! First ylis!'));
+  return { body: f };
 };
 
 /* ---------- camera moves ---------- */

@@ -193,6 +193,28 @@
   }
   #zoomOut svg { width: 18px; height: 18px; }
   #zoomOut:focus-visible { outline: 3px solid #E3B9B0; outline-offset: 2px; }
+  #album { position: fixed; inset: 0; z-index: 25; display: flex; flex-direction: column; background: rgba(36, 20, 15, .94); color: var(--paper); }
+  #album[hidden] { display: none; }
+  #album header { display: flex; align-items: center; gap: 12px; padding: max(14px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px)); }
+  .album-title { font-style: italic; font-size: 18px; }
+  #albumCount { flex: 1; font-size: 13px; letter-spacing: .08em; opacity: .7; font-variant-numeric: tabular-nums; }
+  #albumClose { font: inherit; font-weight: 600; color: var(--accent); background: var(--paper); border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+  #albumTrack { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior: contain; }
+  #albumTrack::-webkit-scrollbar { display: none; }
+  .slide { flex: 0 0 100%; margin: 0; scroll-snap-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px 16px 28px; box-sizing: border-box; }
+  .slide .pics { background: #FBF6EF; padding: 12px 12px 0; border-radius: 4px; box-shadow: 0 20px 40px -18px rgba(0, 0, 0, .7); display: flex; gap: 8px; max-width: min(92vw, 640px); }
+  .slide .pics img { display: block; max-height: 58vh; max-width: 100%; min-width: 0; object-fit: contain; border-radius: 2px; background: #EFE6DB; }
+  .slide .pics.n2 img, .slide .pics.n3 img { flex: 1; object-fit: cover; max-height: 46vh; }
+  .slide figcaption { width: min(92vw, 640px); max-width: 100%; box-sizing: border-box; background: #FBF6EF; color: var(--ink); padding: 12px 18px 18px; border-radius: 0 0 4px 4px; text-align: center; box-shadow: 0 20px 40px -18px rgba(0, 0, 0, .7); }
+  .slide figcaption small { display: block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: #9a7a6c; margin-bottom: 4px; }
+  .slide figcaption span { font: italic 19px/1.35 "Segoe Print", "Bradley Hand", "Iowan Old Style", Georgia, serif; }
+  .album-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(251, 246, 239, .9); color: var(--accent); font-size: 26px; line-height: 1; cursor: pointer; }
+  .album-nav.prev { left: max(10px, env(safe-area-inset-left, 0px)); }
+  .album-nav.next { right: max(10px, env(safe-area-inset-right, 0px)); }
+  @media (pointer: coarse) { .album-nav { display: none; } }
+  .deskphoto { margin: 0; text-align: center; }
+  .deskphoto img { max-height: 44vh; max-width: 100%; border-radius: 10px; }
+  .deskphoto figcaption { margin-top: 6px; font-style: italic; color: #7a5d52; }
   #credit {
     position: fixed; right: max(10px, env(safe-area-inset-right, 0px)); bottom: max(6px, env(safe-area-inset-bottom, 0px));
     font-size: 10px; color: rgba(59, 38, 32, .55); z-index: 4;
@@ -263,6 +285,16 @@
     <div id="cardBody" hidden></div>
     <div id="cardActions"></div>
   </div>
+  <section id="album" hidden aria-label="Our album">
+    <header>
+      <span class="album-title">Our album</span>
+      <span id="albumCount"></span>
+      <button id="albumClose" type="button">Close</button>
+    </header>
+    <div id="albumTrack"></div>
+    <button id="albumPrev" class="album-nav prev" type="button" aria-label="Previous photo">‹</button>
+    <button id="albumNext" class="album-nav next" type="button" aria-label="Next photo">›</button>
+  </section>
   <div id="credit">Dog: “Bernese Mountain Dog Low Poly” by <a href="https://sketchfab.com/picklecobra" target="_blank" rel="noopener">toofball</a>, CC BY 4.0</div>
   <script type="module" src="./main.js?v=3"></script>
 </body>
